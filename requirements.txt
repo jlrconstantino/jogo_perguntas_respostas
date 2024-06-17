@@ -1,0 +1,6 @@
+numpy
+pandas
+nltk
+sentence_splitter
+streamlit
+text-highlighter
