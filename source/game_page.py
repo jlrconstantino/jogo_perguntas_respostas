@@ -23,7 +23,7 @@ def _go_to_next_question():
 
 
 def _finish_game():
-    if len(st.session_state.user_answered) > 0:
+    if len(st.session_state.user_textual_answers) > 0:
         states_to_clear = [
             "selected_topic",
             "selected_topic_idx",

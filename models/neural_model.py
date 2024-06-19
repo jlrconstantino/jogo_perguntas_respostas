@@ -1,7 +1,7 @@
 import torch
 from transformers import BertForQuestionAnswering, BertTokenizerFast
 
-model_path = "./models/Bert_FaQuAD_20ep"
+model_path = "./models/Bert-FaQuAD"
 neural_model = BertForQuestionAnswering.from_pretrained(model_path)
 tokenizer = BertTokenizerFast.from_pretrained(model_path)
 

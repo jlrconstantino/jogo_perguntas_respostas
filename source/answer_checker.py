@@ -1,3 +1,16 @@
+# General dependencies
+import re
+import itertools
+ 
+
+def remove_white_spaces(string):
+    ''' Removes white spaces from strings '''
+    pattern = re.compile(r'\s+')
+    string = re.sub(pattern, '', string)
+    resList = list(itertools.filterfalse(lambda x: x == ' ', string))
+    return ''.join(resList)
+
+
 def check_answer_from_user_selections(user_selections: list[dict], question_answers: list[dict]) -> bool:
     ''' Checks if an answer is correct. '''
     for answer in question_answers:
@@ -11,4 +24,7 @@ def check_answer_from_user_selections(user_selections: list[dict], question_answ
 
 def check_answer_from_text(answer: str, truth: str) -> bool:
     ''' Checks if an answer is correct. '''
-    return truth in answer
+    return re.search(
+        remove_white_spaces(truth), 
+        remove_white_spaces(answer)
+    ) is not None

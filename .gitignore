@@ -166,4 +166,5 @@ text*
 cintil*
 stanford*
 tests.ipynb
+models/Bert-FaQuAD
 run
