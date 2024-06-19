@@ -3,7 +3,7 @@ import streamlit as st
 from text_highlighter import text_highlighter
 
 # Local dependencies
-from source.answer_checker import check_answer
+from source.answer_checker import check_answer_from_user_selections
 from source.game_sidebar import generate_game_sidebar
 from source.available_pages import Pages
 
@@ -23,7 +23,18 @@ def _go_to_next_question():
 
 
 def _finish_game():
-    st.session_state["current_page"] = Pages.RESULTS
+    if len(st.session_state.user_answered) > 0:
+        states_to_clear = [
+            "selected_topic",
+            "selected_topic_idx",
+            "selected_paragraph_idx",
+            "selected_question_idx",
+        ]
+        for state in states_to_clear:
+            del st.session_state[state]
+        st.session_state["current_page"] = Pages.RESULTS
+    else:
+        st.error("Nenhuma resposta foi submetida.")
 
 
 def generate_game_page():
@@ -161,7 +172,7 @@ def generate_game_page():
         question_answers = dataset.get_answers(selected_topic, selected_paragraph_idx, selected_question_idx)
 
         # Checks the current_answer
-        correct = check_answer(user_selections, question_answers)
+        correct = check_answer_from_user_selections(user_selections, question_answers)
         if correct is True:
             st.balloons()
             st.success("Respondido corretamente!")

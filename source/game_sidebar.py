@@ -1,8 +1,14 @@
 # General dependencies
 import numpy as np
-import pandas as pd
 import streamlit as st
 from collections import defaultdict
+
+def _reset_question_and_paragraph():
+    st.session_state["selected_paragraph_idx"] = 0
+    st.session_state["selected_question_idx"] = 0
+
+def _reset_question():
+    st.session_state["selected_question_idx"] = 0
 
 def generate_game_sidebar():
     ''' 
@@ -41,18 +47,8 @@ def generate_game_sidebar():
         Indicates, for a tuple of indexes of a topic, a paragraph and 
         a question, the textual answer of the user.
     '''
-
     # Gets the dataset stored in the session state
     dataset = st.session_state.dataset
-
-    # Gets the available topics
-    topics = dataset.titles
-
-    # Default values for the session state
-    if "selected_topic" not in st.session_state: st.session_state["selected_topic"] = topics[0]
-    if "selected_topic_idx" not in st.session_state: st.session_state["selected_topic_idx"] = 0
-    if "selected_paragraph_idx" not in st.session_state: st.session_state["selected_paragraph_idx"] = 0
-    if "selected_question_idx" not in st.session_state: st.session_state["selected_question_idx"] = 0
 
     # Generates the dict of answers if it does not exist yey
     if "user_answered" not in st.session_state:
@@ -65,30 +61,46 @@ def generate_game_sidebar():
     # Sidebar: title
     st.sidebar.title("Seleção de Sessão")
 
+    # Topics
+    topics = dataset.titles
+    topics_indexes = list(range(len(topics)))
+    if "selected_topic" not in st.session_state: st.session_state["selected_topic"] = topics[0]
+    if "selected_topic_idx" not in st.session_state: st.session_state["selected_topic_idx"] = 0
+
     # Sidebar: topic selection
     st.session_state["selected_topic_idx"] = st.sidebar.selectbox (
         "Selecione um tópico:", 
-        range(len(topics)), 
+        topics_indexes, 
         format_func=lambda x: topics[x], 
-        index=st.session_state["selected_topic_idx"])
+        index=st.session_state["selected_topic_idx"], 
+        on_change=_reset_question_and_paragraph)
     
     # Name of the topic
     st.session_state["selected_topic"] = topics[st.session_state["selected_topic_idx"]]
 
+    # Paragraphs (contexts)
+    paragraph_previews: list[str] = dataset.get_paragraphs_previews(st.session_state["selected_topic"])
+    paragraph_indexes = list(range(len(paragraph_previews)))
+    if "selected_paragraph_idx" not in st.session_state: st.session_state["selected_paragraph_idx"] = 0
+
     # Sidebar: context selection
-    paragraph_previews: list[str] = dataset.get_paragraph_previews(st.session_state["selected_topic"])
     st.session_state["selected_paragraph_idx"] = st.sidebar.selectbox (
         "Selecione um contexto:", 
-        range(len(paragraph_previews)), 
+        paragraph_indexes, 
         format_func=lambda x: paragraph_previews[x], 
-        index=st.session_state["selected_paragraph_idx"])
+        index=st.session_state["selected_paragraph_idx"], 
+        on_change=_reset_question)
+    
+    # Questions
+    questions_previews: list[str] = dataset.get_questions_previews(st.session_state["selected_topic"], st.session_state["selected_paragraph_idx"])
+    questions_indexes = list(range(len(questions_previews)))
+    if "selected_question_idx" not in st.session_state: st.session_state["selected_question_idx"] = 0
 
     # Sidebar: question selection
-    question_previews: list[str] = dataset.get_question_previews(st.session_state["selected_topic"], st.session_state["selected_paragraph_idx"])
     st.session_state["selected_question_idx"] = st.sidebar.selectbox (
         "Selecione uma pergunta:", 
-        range(len(question_previews)), 
-        format_func=lambda x: question_previews[x], 
+        questions_indexes, 
+        format_func=lambda x: questions_previews[x], 
         index=st.session_state["selected_question_idx"])
     
     # User performance data

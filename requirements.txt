@@ -4,3 +4,5 @@ nltk
 sentence_splitter
 streamlit
 text-highlighter
+torch
+transformers
