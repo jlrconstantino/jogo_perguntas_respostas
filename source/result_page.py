@@ -7,7 +7,7 @@ from sentence_splitter import SentenceSplitter
 from source.available_pages import Pages
 from source.answer_checker import check_answer_from_text
 from models.symbolic_model import compute_f1, exact_match, symbolic_model
-from models.neural_model import get_prediction as neural_model
+#from models.neural_model import get_prediction as neural_model
 
 
 def _clear_game():
@@ -48,7 +48,7 @@ def generate_results_page():
     user_textual_answers = st.session_state["user_textual_answers"]
 
     # Sentence splitter
-    splitter = SentenceSplitter("pt")
+    splitter = SentenceSplitter(language="pt")
 
     # To store the questions
     questions = []
@@ -71,13 +71,18 @@ def generate_results_page():
     neural_answers = []
 
     # Computes scores
-    for (title_idx, context_idx, question_idx), answer in user_textual_answers.items():
+    for (title_idx, context_idx, question_idx), user_selections in user_textual_answers.items():
+
+        # Pre-process the answer
+        answer = ""
+        for selection in sorted(user_selections, key=lambda x: x["start"]):
+            answer  += selection["text"]
 
         # Title (topic)
         title = dataset.sorted_titles[title_idx]
 
         # Gets first answer as the ground-truth
-        ground_truth = dataset.get_answers(title, context_idx, question_idx)[0]
+        ground_truth = dataset.get_answers(title, context_idx, question_idx)[0]["text"]
         expected_answers.append(ground_truth)
 
         # Computes scores for the user
@@ -99,7 +104,7 @@ def generate_results_page():
         symbolic_hit_scores.append(check_answer_from_text(symbolic_answer, ground_truth))
 
         # Computes scores for the neural model
-        neural_answer = neural_model(context, question)
+        neural_answer = symbolic_answer#neural_model(context, question)
         neural_answers.append(neural_answer)
         neural_f1_scores.append(compute_f1(neural_answer, ground_truth))
         neural_em_scores.append(exact_match(neural_answer, ground_truth))
@@ -107,45 +112,57 @@ def generate_results_page():
     
     # Page structure (first half)
     st.title("Resultados")
+    st.divider()
     cols = st.columns(3)
     with cols[0]:
         st.markdown("## **Modelo Simbólico**")
-        st.write("Pontuação F1: {:.2f} ± {:.2f}".format(np.mean(symbolic_f1_scores), np.std(symbolic_f1_scores)))
-        st.write("Casamento Exato: {:.2f} ± {:.2f}".format(np.mean(symbolic_em_scores), np.std(symbolic_em_scores)))
-        st.write("Total de acertos: {}".format(np.sum(symbolic_hit_scores)))
+        st.write("")
+        st.markdown("**Pontuação F1:**")
+        st.write("{:.2f} ± {:.2f}\n".format(np.mean(symbolic_f1_scores), np.std(symbolic_f1_scores)))
+        st.write("")
+        st.write("**Casamento Exato:**")
+        st.write("{:.2f} ± {:.2f}\n".format(np.mean(symbolic_em_scores), np.std(symbolic_em_scores)))
+        st.write("")
+        st.write("**Total de acertos:** {}".format(np.sum(symbolic_hit_scores)))
     with cols[1]:
         st.markdown("## **Usuário (Você)**")
-        st.write("Pontuação F1: {:.2f} ± {:.2f}".format(np.mean(user_f1_scores), np.std(user_f1_scores)))
-        st.write("Casamento Exato: {:.2f} ± {:.2f}".format(np.mean(user_em_scores), np.std(user_em_scores)))
-        st.write("Total de acertos: {}".format(np.sum(user_hit_scores)))
+        st.write("")
+        st.markdown("**Pontuação F1:**")
+        st.write("{:.2f} ± {:.2f}\n".format(np.mean(user_f1_scores), np.std(user_f1_scores)))
+        st.write("")
+        st.write("**Casamento Exato:**")
+        st.write("{:.2f} ± {:.2f}\n".format(np.mean(user_em_scores), np.std(user_em_scores)))
+        st.write("")
+        st.write("**Total de acertos:** {}".format(np.sum(user_hit_scores)))
     with cols[2]:
         st.markdown("## **Modelo Neural (Bert)**")
-        st.write("Pontuação F1: {:.2f} ± {:.2f}".format(np.mean(neural_f1_scores), np.std(neural_f1_scores)))
-        st.write("Casamento Exato: {:.2f} ± {:.2f}".format(np.mean(neural_em_scores), np.std(neural_em_scores)))
-        st.write("Total de acertos: {}".format(np.sum(neural_hit_scores)))
+        st.write("")
+        st.markdown("**Pontuação F1:**")
+        st.write("{:.2f} ± {:.2f}\n".format(np.mean(neural_f1_scores), np.std(neural_f1_scores)))
+        st.write("")
+        st.write("**Casamento Exato:**")
+        st.write("{:.2f} ± {:.2f}\n".format(np.mean(neural_em_scores), np.std(neural_em_scores)))
+        st.write("")
+        st.write("**Total de acertos:** {}".format(np.sum(neural_hit_scores)))
     st.divider()
 
     # Page structure (second half)
     st.markdown("## Comparar respostas")
-    question_idx = st.selectbox(
-        "Selecione uma pergunta", 
-        range(len(questions)), 
-        format_func=lambda x: questions[x])
-    st.write("###")
-
-    # Page structure (answers)
-    cols = st.columns(3)
-    with cols[0]:
-        st.markdown("## **Modelo Simbólico**")
-        st.write(symbolic_answers[question_idx])
-    with cols[1]:
-        st.markdown("## **Usuário (Você)**")
-        st.write(user_answers[question_idx])
-    with cols[2]:
-        st.markdown("## **Modelo Neural (Bert)**")
-        st.write(neural_answers[question_idx])
+    for idx, question in enumerate(questions):
+        st.markdown('### "{}"'.format(question))
+        st.write("###")
+        cols = st.columns(3)
+        with cols[0]:
+            st.markdown("## **Modelo Simbólico**")
+            st.write(symbolic_answers[idx])
+        with cols[1]:
+            st.markdown("## **Usuário (Você)**")
+            st.write(user_answers[idx])
+        with cols[2]:
+            st.markdown("## **Modelo Neural (Bert)**")
+            st.write(neural_answers[idx])
+        st.divider()
 
     # Clear game button
-    st.divider()
     with st.columns(5)[-1]:
         st.button("Novo jogo", on_click=_clear_game, use_container_width=True)
