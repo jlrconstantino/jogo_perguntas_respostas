@@ -4,7 +4,7 @@ from text_highlighter import text_highlighter
 
 # Local dependencies
 from source.answer_checker import check_answer
-from source.sidebar import generate_sidebar
+from source.game_sidebar import generate_game_sidebar
 from source.available_pages import Pages
 
 
@@ -29,9 +29,39 @@ def _finish_game():
 def generate_game_page():
     '''
     Generates the page of the main game.
+
+    Session state dependencies:
+    --------------------------
+
+    dataset: FaquadDataset
+        The dataset for the QA Game.
+
+    selected_topic: str
+        The name of the topic selected by the user.
+    
+    selected_topic_idx: int
+        The index of the topic being selected.
+    
+    selected_paragraph_idx: int
+        The index of the paragraph selected by the user.
+    
+    selected_question_idx: int
+        The index of the question selected by the user.
+    
+    user_answered: dict[tuple[int,int,int], bool]
+        Indicates, for a tuple of indexes of a topic, a paragraph and 
+        a question, if the user already answered the question.
+    
+    user_correct_answers: dict[tuple[int,int,int], bool]
+        Indicates, for a tuple of indexes of a topic, a paragraph and 
+        a question, if the user correctly answered the question.
+    
+    user_textual_answers: dict[tuple[int,int,int], list[str]]
+        Indicates, for a tuple of indexes of a topic, a paragraph and 
+        a question, the textual answer of the user.
     '''
     # Sidebar
-    generate_sidebar()
+    generate_game_sidebar()
 
     # Gets the variables from the session state
     dataset = st.session_state["dataset"]

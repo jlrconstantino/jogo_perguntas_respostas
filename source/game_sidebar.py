@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 from collections import defaultdict
 
-def generate_sidebar():
+def generate_game_sidebar():
     ''' 
     Generates the sidebar for the QA Game.
 
