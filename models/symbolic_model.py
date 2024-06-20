@@ -7,6 +7,7 @@ import re
 import json
 import nltk
 import string
+import joblib
 import numpy as np
 from nltk.tree import ParentedTree
 from nltk.corpus import stopwords
@@ -102,37 +103,46 @@ def tokenize_text(text):
     return tokens
 
 def preprocess_context(text, splitter):
-    
-    # Pre tokenizando em frases
-    text_splitted = splitter.split(text=text.replace("(", "").replace(")", ""))
-    
-    if text_splitted == text:
-        context = "\n".join(text.split(','))
-    else:
-        context = "\n".join(text_splitted)
-    path = "text_sentences.txt"
-    save_as_txt(context, path)
-    
-    # Fazendo analise sintatica
-    os.system(f"java -Xmx500m -cp stanford-parser-2010-11-30/stanford-parser.jar edu.stanford.nlp.parser.lexparser.LexicalizedParser -tokenized -sentences newline -outputFormat oneline -uwModel edu.stanford.nlp.parser.lexparser.BaseUnknownWordModel cintil.ser/cintil.ser text_sentences.txt > text_sintax_.txt;")
-    f = open('text_sintax_.txt', "r")
-    tree_context = f.read()
-    f.close()
-    tree_list = tree_context.split("\n")
-    tree_list = [tree for tree in tree_list if tree != '']
-    
-    # Utilizando a separacao sintatica para extrair as frases finais
-    sentences = extract_sentences(tree_list)
+    try:
+        process_contexts = joblib.load('../data/preprocess_context.joblib')
+    except:
+        process_contexts = dict()
 
-    # Extraindo os sintagmas das frases finais
-    final = {}
-    for sentence in range(len(sentences)):
-        final[sentence] = extract_phrases(sentences[sentence])
-    
-    # Removendo arquivos temporarios
-    os.remove("text_sentences.txt")
-    os.remove("text_sintax_.txt")
-    
+    if text in process_contexts:
+        return process_contexts[text]
+    else:
+        # Pre tokenizando em frases
+        text_splitted = splitter.split(text=text.replace("(", "").replace(")", ""))
+
+        if text_splitted == text:
+            context = "\n".join(text.split(','))
+        else:
+            context = "\n".join(text_splitted)
+        path = "text_sentences.txt"
+        save_as_txt(context, path)
+
+        # Fazendo analise sintatica
+        os.system(f"java -Xmx500m -cp stanford-parser-2010-11-30/stanford-parser.jar edu.stanford.nlp.parser.lexparser.LexicalizedParser -tokenized -sentences newline -outputFormat oneline -uwModel edu.stanford.nlp.parser.lexparser.BaseUnknownWordModel cintil.ser/cintil.ser text_sentences.txt > text_sintax_.txt;")
+        f = open('text_sintax_.txt', "r")
+        tree_context = f.read()
+        f.close()
+        tree_list = tree_context.split("\n")
+        tree_list = [tree for tree in tree_list if tree != '']
+
+        # Utilizando a separacao sintatica para extrair as frases finais
+        sentences = extract_sentences(tree_list)
+
+        # Extraindo os sintagmas das frases finais
+        final = {}
+        for sentence in range(len(sentences)):
+            final[sentence] = extract_phrases(sentences[sentence])
+
+        # Removendo arquivos temporarios
+        os.remove("text_sentences.txt")
+        os.remove("text_sintax_.txt")
+
+        process_contexts[text] = final
+        joblib.dump(process_contexts, '../data/preprocess_context.joblib')
     return final
 
 def symbolic_model(text, question, splitter):
