@@ -1,6 +1,9 @@
 # General dependencies
 import re
 import itertools
+
+# Local dependencies
+from models.metrics import normalize_text
  
 
 def remove_white_spaces(string):
@@ -24,7 +27,4 @@ def check_answer_from_user_selections(user_selections: list[dict], question_answ
 
 def check_answer_from_text(answer: str, truth: str) -> bool:
     ''' Checks if an answer is correct. '''
-    return re.search(
-        remove_white_spaces(truth), 
-        remove_white_spaces(answer)
-    ) is not None
+    return re.search(truth, answer) is not None

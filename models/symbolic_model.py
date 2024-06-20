@@ -6,14 +6,14 @@ import os
 import re
 import json
 import nltk
-import string
-import joblib
 import numpy as np
 from nltk.tree import ParentedTree
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from sentence_splitter import SentenceSplitter
+
+from models.metrics import compute_f1, exact_match
 
 nltk.download('punkt')
 nltk.download('stopwords')
@@ -103,49 +103,41 @@ def tokenize_text(text):
     return tokens
 
 def preprocess_context(text, splitter):
-    try:
-        process_contexts = joblib.load('../data/preprocess_context.joblib')
-    except:
-        process_contexts = dict()
-
-    if text in process_contexts:
-        return process_contexts[text]
+    
+    # Pre tokenizando em frases
+    text_splitted = splitter.split(text=text.replace("(", "").replace(")", ""))
+    
+    if text_splitted == text:
+        context = "\n".join(text.split(','))
     else:
-        # Pre tokenizando em frases
-        text_splitted = splitter.split(text=text.replace("(", "").replace(")", ""))
+        context = "\n".join(text_splitted)
+    path = "text_sentences.txt"
+    save_as_txt(context, path)
+    
+    # Fazendo analise sintatica
+    os.system(f"java -Xmx500m -cp stanford-parser-2010-11-30/stanford-parser.jar edu.stanford.nlp.parser.lexparser.LexicalizedParser -tokenized -sentences newline -outputFormat oneline -uwModel edu.stanford.nlp.parser.lexparser.BaseUnknownWordModel cintil.ser/cintil.ser text_sentences.txt > text_sintax_.txt;")
+    f = open('text_sintax_.txt', "r")
+    tree_context = f.read()
+    f.close()
+    tree_list = tree_context.split("\n")
+    tree_list = [tree for tree in tree_list if tree != '']
+    
+    # Utilizando a separacao sintatica para extrair as frases finais
+    sentences = extract_sentences(tree_list)
 
-        if text_splitted == text:
-            context = "\n".join(text.split(','))
-        else:
-            context = "\n".join(text_splitted)
-        path = "text_sentences.txt"
-        save_as_txt(context, path)
-
-        # Fazendo analise sintatica
-        os.system(f"java -Xmx500m -cp stanford-parser-2010-11-30/stanford-parser.jar edu.stanford.nlp.parser.lexparser.LexicalizedParser -tokenized -sentences newline -outputFormat oneline -uwModel edu.stanford.nlp.parser.lexparser.BaseUnknownWordModel cintil.ser/cintil.ser text_sentences.txt > text_sintax_.txt;")
-        f = open('text_sintax_.txt', "r")
-        tree_context = f.read()
-        f.close()
-        tree_list = tree_context.split("\n")
-        tree_list = [tree for tree in tree_list if tree != '']
-
-        # Utilizando a separacao sintatica para extrair as frases finais
-        sentences = extract_sentences(tree_list)
-
-        # Extraindo os sintagmas das frases finais
-        final = {}
-        for sentence in range(len(sentences)):
-            final[sentence] = extract_phrases(sentences[sentence])
-
-        # Removendo arquivos temporarios
-        os.remove("text_sentences.txt")
-        os.remove("text_sintax_.txt")
-
-        process_contexts[text] = final
-        joblib.dump(process_contexts, '../data/preprocess_context.joblib')
+    # Extraindo os sintagmas das frases finais
+    final = {}
+    for sentence in range(len(sentences)):
+        final[sentence] = extract_phrases(sentences[sentence])
+    
+    # Removendo arquivos temporarios
+    os.remove("text_sentences.txt")
+    os.remove("text_sintax_.txt")
+    
     return final
 
 def symbolic_model(text, question, splitter):
+    response = ""
     try:
         # Preprocessando dados
         preprocess_question = tokenize_text(question)
@@ -163,50 +155,11 @@ def symbolic_model(text, question, splitter):
                 if contador >= max_contador:
                     max_contador = contador
                     response = sentence
-    except:
-        response = ""
-    return response
+        return response
+    except Exception as e:
+        print(e)
+        return response
 
-def normalize_text(s):
-
-    # Lowers the text
-    text = s.lower()
-
-    # Removes its punctuation
-    exclude = set(string.punctuation)
-    text = "".join(ch for ch in text if ch not in exclude)
-
-    # Removes its articles
-    regex = re.compile(r"\b(um|uma|o)\b", re.UNICODE)
-    text = re.sub(regex, " ", text)
-
-    # Fixes its white spaces
-    text = " ".join(text.split())
-    
-    return text
-
-
-def exact_match(prediction, truth):
-    return bool(normalize_text(prediction) == normalize_text(truth))
-
-def compute_f1(prediction, truth):
-    pred_tokens = normalize_text(prediction).split()
-    truth_tokens = normalize_text(truth).split()
-
-    # if either the prediction or the truth is no-answer then f1 = 1 if they agree, 0 otherwise
-    if len(pred_tokens) == 0 or len(truth_tokens) == 0:
-        return int(pred_tokens == truth_tokens)
-
-    common_tokens = set(pred_tokens) & set(truth_tokens)
-
-    # if there are no common tokens then f1 = 0
-    if len(common_tokens) == 0:
-        return 0
-
-    prec = len(common_tokens) / len(pred_tokens)
-    rec = len(common_tokens) / len(truth_tokens)
-
-    return round(2 * (prec * rec) / (prec + rec), 2)
 
 def question_answer(context, question, answer, splitter):
     try:
@@ -239,7 +192,7 @@ if __name__ == "__main__":
     #     context = train_contexts[train_q_num]
     #     question = train_questions[train_q_num]
     #     answer = train_answers[train_q_num]['text']
-    #     model_response = symbolic_model(context, question, splitter=splitter)
+    #     model_response = Simbolic_model(context, question, splitter=splitter)
         
     #     print("\nContexto: ", context)
     #     print("\nPergunta: ", question)

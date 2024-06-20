@@ -1,13 +1,12 @@
 # General dependencies
 import numpy as np
 import streamlit as st
-from sentence_splitter import SentenceSplitter
 
 # Local dependencies
 from source.available_pages import Pages
 from source.answer_checker import check_answer_from_text
-from models.symbolic_model import compute_f1, exact_match, symbolic_model
-from models.neural_model import get_prediction as neural_model
+from models.model_output_loader import load_outputs
+from models.metrics import compute_f1, exact_match
 
 
 def _clear_game():
@@ -85,9 +84,7 @@ def generate_results_page():
          # Gets the dataset and the answers
         dataset = st.session_state["dataset"]
         user_textual_answers = st.session_state["user_textual_answers"]
-
-        # Sentence splitter
-        splitter = SentenceSplitter(language="pt")
+        symbolic_answers_dict, neural_answers_dict = load_outputs("./data/models_answers.csv")
 
         # To store the questions
         questions = []
@@ -136,14 +133,14 @@ def generate_results_page():
             questions.append(question)
 
             # Computes scores for the sybolic model
-            symbolic_answer = symbolic_model(context, question, splitter)
+            symbolic_answer = symbolic_answers_dict[title_idx, context_idx, question_idx]
             symbolic_answers.append(symbolic_answer)
             symbolic_f1_scores.append(compute_f1(symbolic_answer, ground_truth))
             symbolic_em_scores.append(exact_match(symbolic_answer, ground_truth))
             symbolic_hit_scores.append(check_answer_from_text(symbolic_answer, ground_truth))
 
             # Computes scores for the neural model
-            neural_answer = neural_model(context, question)
+            neural_answer = neural_answers_dict[title_idx, context_idx, question_idx]
             neural_answers.append(neural_answer)
             neural_f1_scores.append(compute_f1(neural_answer, ground_truth))
             neural_em_scores.append(exact_match(neural_answer, ground_truth))
@@ -173,7 +170,6 @@ def generate_results_page():
         # Freeing memory
         del dataset
         del user_textual_answers
-        del splitter
         del questions
         del expected_answers
         del user_answers
@@ -188,6 +184,8 @@ def generate_results_page():
         del neural_f1_scores
         del neural_em_scores
         del neural_hit_scores
+        del symbolic_answers_dict
+        del neural_answers_dict
 
     # Loads everything necessary from session state
     questions = st.session_state["final_questions"]
@@ -195,61 +193,83 @@ def generate_results_page():
     scores = st.session_state["scores_results"]
     
     # Page structure (first half)
-    st.title("Resultados")
+    st.title("**Resultados**")
     st.divider()
     cols = st.columns(3)
+
+    # Symbolic results
     with cols[0]:
-        st.markdown("## **Modelo Simbólico**")
-        st.write("")
-        st.markdown("**Pontuação F1:**")
-        st.write("{:.2f} ± {:.2f}\n".format(*scores["f1_symbolic"]))
-        st.write("")
-        st.write("**Casamento Exato:**")
-        st.write("{:.2f} ± {:.2f}\n".format(*scores["em_symbolic"]))
-        st.write("")
-        st.write("**Total de acertos:** {}".format(np.sum(scores["hit_symbolic"])))
+        st.markdown("## 🐌 **Modelo Simbólico**")
+        st.markdown('''
+            > **Pontuação F1:**
+            >> {:.2f} ± {:.2f}
+
+            > **Casamento Exato:**
+            >> {:.2f} ± {:.2f}
+
+            > **Total de acertos:**
+            >> {}'''.format(*scores["f1_symbolic"], *scores["em_symbolic"], np.sum(scores["hit_symbolic"])))
+        
+    # User results
     with cols[1]:
-        st.markdown("## **Usuário (Você)**")
-        st.write("")
-        st.markdown("**Pontuação F1:**")
-        st.write("{:.2f} ± {:.2f}\n".format(*scores["f1_user"]))
-        st.write("")
-        st.write("**Casamento Exato:**")
-        st.write("{:.2f} ± {:.2f}\n".format(*scores["em_user"]))
-        st.write("")
-        st.write("**Total de acertos:** {}".format(np.sum(scores["hit_user"])))
+        st.markdown("## 😄 **Usuário (Você)**")
+        st.markdown('''
+            > **Pontuação F1:**
+            >> {:.2f} ± {:.2f}
+
+            > **Casamento Exato:**
+            >> {:.2f} ± {:.2f}
+
+            > **Total de acertos:**
+            >> {}'''.format(*scores["f1_user"], *scores["em_user"], np.sum(scores["hit_user"])))
+
+    # Neural results
     with cols[2]:
-        st.markdown("## **Modelo Neural (Bert)**")
-        st.write("")
-        st.markdown("**Pontuação F1:**")
-        st.write("{:.2f} ± {:.2f}\n".format(*scores["f1_neural"]))
-        st.write("")
-        st.write("**Casamento Exato:**")
-        st.write("{:.2f} ± {:.2f}\n".format(*scores["em_neural"]))
-        st.write("")
-        st.write("**Total de acertos:** {}".format(np.sum(scores["hit_neural"])))
-    st.divider()
+        st.markdown("## 🦅 **Modelo Neural (Bert)**")
+        st.markdown('''
+            > **Pontuação F1:**
+            >> {:.2f} ± {:.2f}
+
+            > **Casamento Exato:**
+            >> {:.2f} ± {:.2f}
+
+            > **Total de acertos:**
+            >> {}'''.format(*scores["f1_neural"], *scores["em_neural"], np.sum(scores["hit_neural"])))
 
     # Page structure (second half)
+    st.divider()
     st.markdown("## Comparar respostas")
+
+    # Question selection
     question_idx = st.selectbox(
         "Selecione uma questão:", 
         range(len(questions)), 
         format_func=lambda x: questions[x])
+    
+    # Expected answer display
     st.selectbox("Resposta esperada:", [answers["expected"][question_idx]])
+
+    # Symbolic answer
     cols = st.columns(3)
     with cols[0]:
-        st.markdown("## **Modelo Simbólico**")
+        st.markdown("## 🐌 **Modelo Simbólico**")
         _generate_status_message(scores["hit_symbolic"], question_idx)
-        st.write(answers["user"][question_idx])
+        answer = answers["symbolic"][question_idx]
+        st.write(answer if len(answer) > 0 else "...")
+    
+    # User answer
     with cols[1]:
-        st.markdown("## **Usuário (Você)**")
+        st.markdown("## 😄 **Usuário (Você)**")
         _generate_status_message(scores["hit_user"], question_idx)
-        st.write(answers["symbolic"][question_idx])
+        answer = answers["user"][question_idx]
+        st.write(answer if len(answer) > 0 else "...")
+
+    # Neural answer
     with cols[2]:
-        st.markdown("## **Modelo Neural (Bert)**")
+        st.markdown("## 🦅 **Modelo Neural (Bert)**")
         _generate_status_message(scores["hit_neural"], question_idx)
-        st.write(answers["neural"][question_idx])
+        answer = answers["neural"][question_idx]
+        st.write(answer if len(answer) > 0 else "...")
 
     # Clear game button
     st.divider()
