@@ -1,4 +1,5 @@
 # General dependencies
+import time
 import streamlit as st
 from text_highlighter import text_highlighter
 
@@ -70,6 +71,12 @@ def generate_game_page():
     user_textual_answers: dict[tuple[int,int,int], list[str]]
         Indicates, for a tuple of indexes of a topic, a paragraph and 
         a question, the textual answer of the user.
+    
+    Session state outputs:
+    ---------------------
+
+    initial_time: float
+        The time in which the game started.
     '''
     # Sidebar
     generate_game_sidebar()
@@ -85,6 +92,10 @@ def generate_game_page():
     user_answered: bool = st.session_state.user_answered[(
         selected_topic_idx, selected_paragraph_idx, selected_question_idx)]
     answer_submitted: bool = False
+
+    # Time control
+    if "initial_time" not in st.session_state:
+        st.session_state["initial_time"] = time.perf_counter()
 
     # Title
     st.header("**Jogo de Perguntas e Respostas**")

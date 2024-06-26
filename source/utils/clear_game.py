@@ -22,6 +22,8 @@ def clear_game():
         "generated_results", 
         "scores_results", 
         "user_name", 
+        "initial_time", 
+        "end_time"
     ]
 
     # Clear every state

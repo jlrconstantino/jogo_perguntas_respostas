@@ -1,13 +1,17 @@
 # General dependencies
+import time
 import numpy as np
 import pandas as pd
 import streamlit as st
+from functools import partial
 
 # Local dependencies
 from source.utils.faquad import FaquadDataset
 from source.utils.clear_game import clear_game
+from source.pages.available_pages import Pages
 from source.models.model_output_loader import load_outputs
 from source.models.metrics import compute_f1, exact_match
+from source.utils.leaderboard import load_leaderboard, save_leaderboard, add_row_to_leaderboard
 
 
 def _generate_status_message(hits, question_idx):
@@ -28,6 +32,32 @@ def _get_ground_truth(dataset, title, context_idx, question_idx) -> list[str]:
     ground_truth = dataset.get_answers(title, context_idx, question_idx)
     ground_truth = [answer["text"] for answer in ground_truth]
     return ground_truth
+
+
+def _update_leaderboard(name, hit, f1, em):
+    start = st.session_state["initial_time"]
+    end = st.session_state["end_time"]
+    df = load_leaderboard()
+    add_row_to_leaderboard(
+        df, 
+        name, 
+        len(hit), 
+        np.sum(hit), 
+        np.mean(f1), 
+        np.mean(em), 
+        "{:.3f}".format(end-start)
+    )
+    save_leaderboard(df)
+
+
+def _go_to_home_page(name, hit, f1, em):
+    _update_leaderboard(name, hit, f1, em)
+    clear_game()
+
+
+def _go_to_leaderboard(name, hit, f1, em):
+    _update_leaderboard(name, hit, f1, em)
+    st.session_state["current_page"] = Pages.LEADERBOARD
 
 
 def generate_results_page():
@@ -51,10 +81,17 @@ def generate_results_page():
     
     user_name: str
         The name chosen by the user.
+    
+    initial_time: float
+        The time in which the game started.
 
 
     Session state outputs:
     ---------------------
+
+    end_time: float
+        The time in which this page was generated. Indicates 
+        the end of the user playthrough.
 
     generated_results: bool
         Indicates if the results are already generated.
@@ -68,6 +105,10 @@ def generate_results_page():
         "symbolic" and "neural"). Except "hit": this contains 
         boolean masks as values.
     '''
+    # Saves the end time
+    if "end_time" not in st.session_state:
+        st.session_state["end_time"] = time.perf_counter()
+
     # Loads the dataset and the answers
     dataset: FaquadDataset = st.session_state["dataset"]
     user_correct_answers = st.session_state["user_correct_answers"]
@@ -238,7 +279,20 @@ def generate_results_page():
         _generate_status_message(scores["hit_neural"], question_idx)
         st.write(neural_answer if len(neural_answer) > 0 else "...")
 
-    # Clear game button
+    # Button section
     st.divider()
-    with st.columns(5)[-1]:
-        st.button("Novo jogo", on_click=clear_game, use_container_width=True)
+    cols = st.columns(5)
+
+    # Leaderboard button
+    with cols[-2]: 
+        st.button(
+            "Placar de líderes", 
+            on_click=partial(_go_to_leaderboard, user_name, scores["hit_user"], scores["f1_user"], scores["em_user"]), 
+            use_container_width=True)
+    
+    # Clear game button
+    with cols[-1]: 
+        st.button(
+            "Novo jogo", 
+            on_click=partial(_go_to_home_page, user_name, scores["hit_user"], scores["f1_user"], scores["em_user"]), 
+            use_container_width=True)

@@ -9,13 +9,13 @@ GAME_LEADERBOARD_PATH = "./data/game_leaderboard.csv"
 def load_leaderboard() -> pd.DataFrame:
     ''' Loads and returns the leaderboard. '''
 
-    # Reads the original leaderboard
-    df = pd.read_csv(ORIGINAL_LEADERBOARD_PATH)
-
     # Reads the game leaderboard
     if os.path.exists(GAME_LEADERBOARD_PATH):
-        df_2 = pd.read_csv(GAME_LEADERBOARD_PATH)
-        df = pd.merge(df, df_2)
+        df = pd.read_csv(GAME_LEADERBOARD_PATH)
+
+    # Reads the original leaderboard
+    else:
+        df = pd.read_csv(ORIGINAL_LEADERBOARD_PATH)
     
     # Sorts the values
     df = df.sort_values([
@@ -23,7 +23,7 @@ def load_leaderboard() -> pd.DataFrame:
         "Total de Acertos", 
         "Pontuação F1 Média", 
         "Casamento Exato Médio", 
-        "Tempo Gasto (segundos)"]).reset_index()
+        "Tempo Gasto (segundos)"], ascending=False).reset_index().drop(axis=1, labels="index")
 
     # Returns the DataFrame
     return df
@@ -34,5 +34,5 @@ def save_leaderboard(df: pd.DataFrame) -> None:
 
 def add_row_to_leaderboard(df: pd.DataFrame, user: str, tr: int, ta: int, f1: float, em: float, time: float) -> pd.DataFrame:
     ''' Adds a row to the leaderboard '''
-    df.loc[len(df)] = [user, tr, ta, f1, em, time]
+    df.loc[len(df)] = [user, tr, ta, "{:.2f}".format(f1), "{:.2f}".format(em), time]
     return df
