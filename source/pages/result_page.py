@@ -115,9 +115,13 @@ def generate_results_page():
 
             # Answer of the symbolic model
             symbolic_answer, symbolic_is_correct = symbolic_answers_dict[title_idx, context_idx, question_idx]
+            if not isinstance(symbolic_answer, str):
+                symbolic_answer = ""
 
             # Answer of the neural model
             neural_answer, neural_is_correct = neural_answers_dict[title_idx, context_idx, question_idx]
+            if not isinstance(neural_answer, str):
+                neural_answer = ""
 
             # Title (topic)
             title = dataset.sorted_titles[title_idx]
@@ -202,48 +206,6 @@ def generate_results_page():
     
     # Writes the results
     st.dataframe(df_results, use_container_width=True)
-    """
-    cols = st.columns(3)
-
-    # Symbolic results
-    with cols[0]:
-        st.markdown("## 🐌 **O Caracol**")
-        st.markdown('''
-            > **Pontuação F1:**
-            >> {:.2f} ± {:.2f}
-
-            > **Casamento Exato:**
-            >> {:.2f} ± {:.2f}
-
-            > **Total de acertos:**
-            >> {}'''.format(*scores["f1_symbolic"], *scores["em_symbolic"], np.sum(scores["hit_symbolic"])))
-        
-    # User results
-    with cols[1]:
-        st.markdown("## 😄 **Usuário (Você)**")
-        st.markdown('''
-            > **Pontuação F1:**
-            >> {:.2f} ± {:.2f}
-
-            > **Casamento Exato:**
-            >> {:.2f} ± {:.2f}
-
-            > **Total de acertos:**
-            >> {}'''.format(*scores["f1_user"], *scores["em_user"], np.sum(scores["hit_user"])))
-
-    # Neural results
-    with cols[2]:
-        st.markdown("## 👑 **Bert**")
-        st.markdown('''
-            > **Pontuação F1:**
-            >> {:.2f} ± {:.2f}
-
-            > **Casamento Exato:**
-            >> {:.2f} ± {:.2f}
-
-            > **Total de acertos:**
-            >> {}'''.format(*scores["f1_neural"], *scores["em_neural"], np.sum(scores["hit_neural"])))
-    """
 
     # Page structure (second half)
     st.divider()
