@@ -13,7 +13,7 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from sentence_splitter import SentenceSplitter
 
-from models.metrics import compute_f1, exact_match
+from source.models.metrics import compute_f1, exact_match
 
 nltk.download('punkt')
 nltk.download('stopwords')

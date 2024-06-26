@@ -2,12 +2,14 @@
 import streamlit as st
 
 # Local dependencies
-from source.load_dataset import load_dataset, FAQUAD_TEST_PATH
-from source.title_page import generate_title_page
-from source.game_page import generate_game_page
-from source.result_page import generate_results_page
-from source.error_page import generate_error_page
-from source.available_pages import Pages
+from source.utils.load_dataset import load_dataset, FAQUAD_TEST_PATH
+from source.pages.title_page import generate_title_page
+from source.pages.game_page import generate_game_page
+from source.pages.result_page import generate_results_page
+from source.pages.error_page import generate_error_page
+from source.pages.leaderboard_page import generate_leaderboard_page
+from source.pages.credits_page import generate_credits_page
+from source.pages.available_pages import Pages
 
 # Page config
 st.set_page_config(
@@ -34,6 +36,14 @@ elif st.session_state["current_page"] == Pages.GAME:
 # Loads the page of results
 elif st.session_state["current_page"] == Pages.RESULTS:
     with st.spinner("Aguarde por favor..."): generate_results_page()
+
+# Loads the page of leaderboard
+elif st.session_state["current_page"] == Pages.LEADERBOARD:
+    with st.spinner("Aguarde por favor..."): generate_leaderboard_page()
+
+# Loads the credits
+elif st.session_state["current_page"] == Pages.CREDITS:
+    with st.spinner("Aguarde por favor..."): generate_credits_page()
 
 # Loads the error page
 else: generate_error_page()

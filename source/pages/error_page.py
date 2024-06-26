@@ -2,7 +2,7 @@
 import streamlit as st
 
 # Local dependencies
-from source.available_pages import Pages
+from source.pages.available_pages import Pages
 
 def _go_to_home_page():
     st.session_state["current_page"] = Pages.HOME

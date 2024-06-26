@@ -4,31 +4,10 @@ import pandas as pd
 import streamlit as st
 
 # Local dependencies
-from source.available_pages import Pages
-from source.faquad import FaquadDataset
-from models.model_output_loader import load_outputs
-from models.metrics import compute_f1, exact_match
-
-
-def _clear_game():
-    states_to_clear = [
-        "selected_topic",
-        "selected_topic_idx",
-        "selected_paragraph_idx",
-        "selected_question_idx",
-        "user_answered",
-        "user_correct_answers",
-        "user_textual_answers", 
-        "user_answered_topics_indexes", 
-        "user_answered_paragraphs_indexes", 
-        "user_answered_questions_indexes", 
-        "generated_results", 
-        "scores_results", 
-    ]
-    for state in states_to_clear:
-        if state in st.session_state:
-            del st.session_state[state]
-    st.session_state["current_page"] = Pages.HOME
+from source.utils.faquad import FaquadDataset
+from source.utils.clear_game import clear_game
+from source.models.model_output_loader import load_outputs
+from source.models.metrics import compute_f1, exact_match
 
 
 def _generate_status_message(hits, question_idx):
@@ -69,6 +48,9 @@ def generate_results_page():
     user_textual_answers: dict[tuple[int,int,int], list[str]]
         Indicates, for a tuple of indexes of a topic, a paragraph and 
         a question, the textual answer of the user.
+    
+    user_name: str
+        The name chosen by the user.
 
 
     Session state outputs:
@@ -90,6 +72,7 @@ def generate_results_page():
     dataset: FaquadDataset = st.session_state["dataset"]
     user_correct_answers = st.session_state["user_correct_answers"]
     user_textual_answers = st.session_state["user_textual_answers"]
+    user_name = st.session_state["user_name"]
     symbolic_answers_dict, neural_answers_dict = load_outputs("./data/models_answers.csv")
 
     # Process the results if not processed yet
@@ -201,7 +184,7 @@ def generate_results_page():
             [np.sum(scores["hit_user"]), "{:.2f} ± {:.2f}".format(*scores["f1_user"]), "{:.2f} ± {:.2f}".format(*scores["em_user"])], 
             [np.sum(scores["hit_neural"]), "{:.2f} ± {:.2f}".format(*scores["f1_neural"]), "{:.2f} ± {:.2f}".format(*scores["em_neural"])], 
         ]).T, 
-        columns=["🐌 O Caracol", "😄 Usuário (Você)", "👑 Bert"],
+        columns=["🐌 O Caracol", "😄 {}".format(user_name), "👑 Bert"],
         index=["Total de Acertos", "Pontuação F1", "Casamento Exato"])
     
     # Writes the results
@@ -245,7 +228,7 @@ def generate_results_page():
     
     # User answer
     with cols[1]:
-        st.markdown("## 😄 **Usuário (Você)**")
+        st.markdown("## 😄 **{}**".format(user_name))
         _generate_status_message(scores["hit_user"], question_idx)
         st.write(user_answer if len(user_answer) > 0 else "...")
 
@@ -258,4 +241,4 @@ def generate_results_page():
     # Clear game button
     st.divider()
     with st.columns(5)[-1]:
-        st.button("Novo jogo", on_click=_clear_game, use_container_width=True)
+        st.button("Novo jogo", on_click=clear_game, use_container_width=True)

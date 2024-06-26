@@ -2,7 +2,7 @@
 import streamlit as st
 
 # Local dependencies
-from source.faquad import FaquadDataset
+from source.utils.faquad import FaquadDataset
 
 # Path for the FaQuAD dataset .json files
 FAQUAD_DATASET_PATH = "./data/dataset.json"

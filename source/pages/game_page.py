@@ -3,9 +3,9 @@ import streamlit as st
 from text_highlighter import text_highlighter
 
 # Local dependencies
-from source.answer_checker import check_answer_from_user_selections
-from source.game_sidebar import generate_game_sidebar
-from source.available_pages import Pages
+from source.utils.answer_checker import check_answer_from_user_selections
+from source.pages.game_sidebar import generate_game_sidebar
+from source.pages.available_pages import Pages
 
 
 def _go_to_previous_question():

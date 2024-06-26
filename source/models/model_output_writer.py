@@ -5,9 +5,9 @@ from csv import writer
 from sentence_splitter import SentenceSplitter
 
 # Local dependencies
-from source.faquad import FaquadDataset
-from models.symbolic_model import symbolic_model
-from models.neural_model import get_prediction as neural_model
+from source.utils.faquad import FaquadDataset
+from source.models.symbolic_model import symbolic_model
+from source.models.neural_model import get_prediction as neural_model
 
 def write_model_outputs(csv_path: str, dataset: FaquadDataset) -> None:
     '''

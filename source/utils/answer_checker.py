@@ -2,10 +2,6 @@
 import re
 import itertools
 
-# Local dependencies
-from models.metrics import normalize_text
- 
-
 def remove_white_spaces(string):
     ''' Removes white spaces from strings '''
     pattern = re.compile(r'\s+')
